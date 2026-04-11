@@ -2,7 +2,7 @@ import type { OAuthTokens } from './types';
 import { CLIError } from '../errors/base';
 import { ExitCode } from '../errors/codes';
 
-// OAuth configuration — exact endpoints TBD pending MiniMax OAuth docs
+// OAuth configuration
 export interface OAuthConfig {
   clientId: string;
   authorizationUrl: string;
@@ -15,9 +15,9 @@ export interface OAuthConfig {
 const DEFAULT_OAUTH_CONFIG: OAuthConfig = {
   clientId: 'mmx-cli',
   authorizationUrl: 'https://platform.minimax.io/oauth/authorize',
-  tokenUrl: 'https://api.minimax.io/v1/oauth/token',
-  deviceCodeUrl: 'https://api.minimax.io/v1/oauth/device/code',
-  scopes: ['api'],
+  tokenUrl: 'https://api.minimax.io/oauth/token',
+  deviceCodeUrl: 'https://api.minimax.io/oauth/code',
+  scopes: ['openid', 'profile', 'coding_plan'],
   callbackPort: 18991,
 };
 
@@ -139,13 +139,24 @@ async function waitForCallback(port: number, expectedState: string): Promise<str
 export async function startDeviceCodeFlow(
   config: OAuthConfig = DEFAULT_OAUTH_CONFIG,
 ): Promise<OAuthTokens> {
-  // Request device code
+  const { randomBytes, createHash } = await import('crypto');
+  const codeVerifier = randomBytes(32).toString('base64url');
+  const codeChallenge = createHash('sha256')
+    .update(codeVerifier)
+    .digest('base64url');
+
+  const state = randomBytes(16).toString('base64url');
+
+  // Request device code with PKCE
   const codeRes = await fetch(config.deviceCodeUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       client_id: config.clientId,
       scope: config.scopes.join(' '),
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
+      state,
     }),
   });
 
@@ -156,22 +167,25 @@ export async function startDeviceCodeFlow(
     );
   }
 
-  const { device_code, user_code, verification_uri, interval, expires_in } =
-    (await codeRes.json()) as {
-      device_code: string;
-      user_code: string;
-      verification_uri: string;
-      interval: number;
-      expires_in: number;
-    };
+  const data = (await codeRes.json()) as {
+    user_code: string;
+    verification_uri: string;
+    expired_in: number; // milliseconds
+    interval: number;   // milliseconds
+    state: string;
+  };
 
-  process.stderr.write(`\nVisit: ${verification_uri}\n`);
-  process.stderr.write(`Enter code: ${user_code}\n`);
+  if (data.state !== state) {
+    throw new CLIError('OAuth state mismatch: possible CSRF attack.', ExitCode.AUTH);
+  }
+
+  process.stderr.write(`\nVisit: ${data.verification_uri}\n`);
+  process.stderr.write(`Enter code: ${data.user_code}\n`);
   process.stderr.write('Waiting for authorization...\n');
 
-  // Poll for authorization
-  const deadline = Date.now() + expires_in * 1000;
-  const pollInterval = (interval || 5) * 1000;
+  // Poll for authorization (times are already in milliseconds)
+  const deadline = Date.now() + data.expired_in;
+  const pollInterval = data.interval || 5000;
 
   while (Date.now() < deadline) {
     await new Promise(r => setTimeout(r, pollInterval));
@@ -181,24 +195,41 @@ export async function startDeviceCodeFlow(
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-        device_code,
         client_id: config.clientId,
+        user_code: data.user_code,
+        code_verifier: codeVerifier,
       }),
     });
 
-    if (tokenRes.ok) {
-      return (await tokenRes.json()) as OAuthTokens;
+    if (!tokenRes.ok) {
+      throw new CLIError(
+        `Device code authorization failed: HTTP ${tokenRes.status}`,
+        ExitCode.AUTH,
+      );
     }
 
-    const err = (await tokenRes.json()) as { error: string };
-    if (err.error === 'authorization_pending') continue;
-    if (err.error === 'slow_down') {
-      await new Promise(r => setTimeout(r, 5000));
-      continue;
+    const tokenData = (await tokenRes.json()) as {
+      status: string;
+      access_token?: string;
+      refresh_token?: string;
+      expired_in?: number;
+      resource_url?: string;
+    };
+
+    if (tokenData.status === 'success' && tokenData.access_token) {
+      return {
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token ?? '',
+        expired_in: tokenData.expired_in ?? 0,
+        token_type: 'Bearer',
+        resource_url: tokenData.resource_url,
+      };
     }
+
+    if (tokenData.status === 'pending') continue;
 
     throw new CLIError(
-      `Device code authorization failed: ${err.error}`,
+      `Device code authorization failed: ${tokenData.status}`,
       ExitCode.AUTH,
     );
   }

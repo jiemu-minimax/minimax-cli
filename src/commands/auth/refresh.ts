@@ -36,8 +36,9 @@ export default defineCommand({
     const updated: CredentialFile = {
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
-      expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+      expires_at: new Date(Date.now() + tokens.expired_in).toISOString(), // expired_in is already ms
       token_type: 'Bearer',
+      resource_url: tokens.resource_url ?? creds.resource_url,
       account: creds.account,
     };
 
