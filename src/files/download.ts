@@ -1,4 +1,4 @@
-import { createWriteStream, unlinkSync } from 'fs';
+import { createWriteStream, renameSync, unlinkSync } from 'fs';
 import { createProgressBar } from '../output/progress';
 import { CLIError } from '../errors/base';
 import { ExitCode } from '../errors/codes';
@@ -41,12 +41,14 @@ export async function downloadFile(
       const reader = res.body?.getReader();
       if (!reader) throw new CLIError('No response body', ExitCode.GENERAL);
 
-      const writer = createWriteStream(destPath);
+      const tmpPath = `${destPath}.tmp-${process.pid}-${Date.now()}-${attempt}-${Math.random().toString(36).slice(2)}`;
+      const writer = createWriteStream(tmpPath);
       const progress = contentLength > 0 && !opts?.quiet
         ? createProgressBar(contentLength, 'Downloading')
         : null;
 
       let received = 0;
+      let readComplete = false;
       let completed = false;
 
       try {
@@ -67,22 +69,28 @@ export async function downloadFile(
           received += value.byteLength;
           progress?.update(received);
         }
-        completed = true;
+        readComplete = true;
       } finally {
         reader.releaseLock();
         progress?.finish();
 
-        await new Promise<void>((resolve, reject) => {
-          writer.on('finish', resolve);
-          writer.on('error', reject);
-          writer.end();
-        });
-
-        if (!completed) {
-          try { unlinkSync(destPath); } catch { /* best effort */ }
+        try {
+          if (!writer.destroyed) {
+            await new Promise<void>((resolve, reject) => {
+              writer.on('finish', resolve);
+              writer.on('error', reject);
+              writer.end();
+            });
+            completed = readComplete;
+          }
+        } finally {
+          if (!completed) {
+            try { unlinkSync(tmpPath); } catch { /* best effort */ }
+          }
         }
       }
 
+      renameSync(tmpPath, destPath);
       return { size: received };
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
