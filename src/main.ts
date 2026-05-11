@@ -9,6 +9,7 @@ import { checkForUpdate, getPendingUpdateNotification } from './update/checker';
 import { loadCredentials } from './auth/credentials';
 import { ensureApiKey } from './auth/setup';
 import { CLI_VERSION } from './version';
+import { ProxyAgent, setGlobalDispatcher } from 'undici';
 
 // Handle Ctrl+C gracefully
 process.on('SIGINT', () => {
@@ -42,9 +43,19 @@ async function main() {
 
   const commandPath = scanCommandPath(argv, GLOBAL_OPTIONS);
 
+  // Proxy: env vars take precedence over config file
+  const rawConfig = readConfigFile();
+  const proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy
+    || process.env.HTTP_PROXY || process.env.http_proxy
+    || process.env.ALL_PROXY || process.env.all_proxy
+    || rawConfig.proxy;
+  if (proxyUrl) {
+    setGlobalDispatcher(new ProxyAgent(proxyUrl));
+  }
+
   if (argv.includes('--help') || argv.includes('-h')) {
     const ri = argv.indexOf('--region');
-    const region = ((ri >= 0 && argv[ri + 1]) || process.env.MINIMAX_REGION || readConfigFile().region || 'global') as Region;
+    const region = ((ri >= 0 && argv[ri + 1]) || process.env.MINIMAX_REGION || rawConfig.region || 'global') as Region;
     registry.printHelp(commandPath, process.stderr, region);
     process.exit(0);
   }

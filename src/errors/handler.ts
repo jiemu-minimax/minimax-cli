@@ -40,7 +40,8 @@ export function handleError(err: unknown): never {
       const networkErr = new CLIError(
         "Network request failed.",
         ExitCode.NETWORK,
-        "Check your network connection and proxy settings. Also verify MINIMAX_BASE_URL is a valid URL.",
+        "Check your network connection.\n" +
+          "To use a proxy: set HTTPS_PROXY env var, or run: mmx config set --key proxy --value http://HOST:PORT",
       );
       return handleError(networkErr);
     }
@@ -63,10 +64,13 @@ export function handleError(err: unknown): never {
       msg.includes("eai_AGAIN");
 
     if (isNetworkError) {
-      let hint = "Check your network connection and proxy settings.";
+      let hint =
+        "Check your network connection.\n" +
+        "To use a proxy: set HTTPS_PROXY env var, or run: mmx config set --key proxy --value http://HOST:PORT";
       if (msg.includes("proxy")) {
         hint =
-          "Proxy error — check HTTP_PROXY / HTTPS_PROXY environment variables and proxy authentication.";
+          "Proxy connection failed — verify your proxy URL and authentication.\n" +
+          "Check: HTTPS_PROXY / HTTP_PROXY env vars, or mmx config show for configured proxy.";
       }
       const networkErr = new CLIError(
         "Network request failed.",

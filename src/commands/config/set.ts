@@ -6,7 +6,7 @@ import { readConfigFile, writeConfigFile } from '../../config/loader';
 import type { Config } from '../../config/schema';
 import type { GlobalFlags } from '../../types/flags';
 
-const VALID_KEYS = ['region', 'base_url', 'output', 'timeout', 'api_key', 'default_text_model', 'default_speech_model', 'default_video_model', 'default_music_model'];
+const VALID_KEYS = ['region', 'base_url', 'output', 'timeout', 'api_key', 'proxy', 'default_text_model', 'default_speech_model', 'default_video_model', 'default_music_model'];
 
 // Allow hyphen-style keys (e.g. default-text-model → default_text_model)
 const KEY_ALIASES: Record<string, string> = {
@@ -21,12 +21,13 @@ export default defineCommand({
   description: 'Set a config value',
   usage: 'mmx config set --key <key> --value <value>',
   options: [
-    { flag: '--key <key>', description: 'Config key (region, base_url, output, timeout, api_key, default_text_model, default_speech_model, default_video_model, default_music_model)' },
+    { flag: '--key <key>', description: 'Config key (region, base_url, output, timeout, api_key, proxy, default_text_model, default_speech_model, default_video_model, default_music_model)' },
     { flag: '--value <value>', description: 'Value to set' },
   ],
   examples: [
     'mmx config set --key output --value json',
     'mmx config set --key timeout --value 600',
+    'mmx config set --key proxy --value http://127.0.0.1:7890',
     'mmx config set --key base_url --value https://api-uw.minimax.io',
   ],
   async run(config: Config, flags: GlobalFlags) {
@@ -63,6 +64,20 @@ export default defineCommand({
     if (resolvedKey === 'output' && !['text', 'json'].includes(value)) {
       throw new CLIError(
         `Invalid output format "${value}". Valid values: text, json`,
+        ExitCode.USAGE,
+      );
+    }
+
+    if (resolvedKey === 'base_url' && !value.startsWith('http')) {
+      throw new CLIError(
+        `Invalid base_url "${value}". Must start with http.`,
+        ExitCode.USAGE,
+      );
+    }
+
+    if (resolvedKey === 'proxy' && !value.startsWith('http')) {
+      throw new CLIError(
+        `Invalid proxy "${value}". Must be a URL starting with http (e.g. http://127.0.0.1:7890).`,
         ExitCode.USAGE,
       );
     }
