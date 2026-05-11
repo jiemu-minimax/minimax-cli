@@ -16,6 +16,7 @@ export interface ConfigFile {
   base_url?: string;
   output?: 'text' | 'json';
   timeout?: number;
+  proxy?: string;
   default_text_model?: string;
   default_speech_model?: string;
   default_video_model?: string;
@@ -35,6 +36,7 @@ export function parseConfigFile(raw: unknown): ConfigFile {
   if (typeof obj.base_url === 'string' && obj.base_url.startsWith('http')) out.base_url = obj.base_url;
   if (typeof obj.output === 'string' && VALID_OUTPUTS.has(obj.output)) out.output = obj.output as ConfigFile['output'];
   if (typeof obj.timeout === 'number' && obj.timeout > 0) out.timeout = obj.timeout;
+  if (typeof obj.proxy === 'string' && obj.proxy.startsWith('http')) out.proxy = obj.proxy;
   if (typeof obj.default_text_model === 'string' && obj.default_text_model.length > 0) out.default_text_model = obj.default_text_model;
   if (typeof obj.default_speech_model === 'string' && obj.default_speech_model.length > 0) out.default_speech_model = obj.default_speech_model;
   if (typeof obj.default_video_model === 'string' && obj.default_video_model.length > 0) out.default_video_model = obj.default_video_model;

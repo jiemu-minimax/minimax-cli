@@ -13,6 +13,7 @@ await Bun.build({
   naming: 'mmx.mjs',
   target: 'node',
   minify: !DEV_BUILD,
+  external: ['undici'],
   define: { 'process.env.CLI_VERSION': JSON.stringify(VERSION) },
 });
 
