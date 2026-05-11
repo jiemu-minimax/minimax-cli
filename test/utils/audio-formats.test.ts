@@ -5,6 +5,7 @@ import {
   formatList,
   validateAudioFormat,
   validateT2AStreaming,
+  t2aDefaultSampleRate,
 } from '../../src/utils/audio-formats';
 
 describe('audio-formats', () => {
@@ -50,6 +51,24 @@ describe('audio-formats', () => {
   describe('formatList', () => {
     it('joins formats with comma-space', () => {
       expect(formatList(['a', 'b', 'c'])).toBe('a, b, c');
+    });
+  });
+
+  describe('t2aDefaultSampleRate', () => {
+    it('returns 24000 for opus', () => {
+      expect(t2aDefaultSampleRate('opus', 32000)).toBe(24000);
+    });
+
+    it('returns 8000 for pcmu_raw', () => {
+      expect(t2aDefaultSampleRate('pcmu_raw', 32000)).toBe(8000);
+    });
+
+    it('returns 8000 for pcmu_wav', () => {
+      expect(t2aDefaultSampleRate('pcmu_wav', 32000)).toBe(8000);
+    });
+
+    it('returns fallback for mp3', () => {
+      expect(t2aDefaultSampleRate('mp3', 32000)).toBe(32000);
     });
   });
 });

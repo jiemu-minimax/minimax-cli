@@ -20,6 +20,16 @@ export function validateAudioFormat(format: string, formats: readonly string[]):
   }
 }
 
+const T2A_SAMPLE_RATE: Partial<Record<T2AFormat, number>> = {
+  opus: 24000,
+  pcmu_raw: 8000,
+  pcmu_wav: 8000,
+};
+
+export function t2aDefaultSampleRate(format: string, fallback: number): number {
+  return T2A_SAMPLE_RATE[format as T2AFormat] ?? fallback;
+}
+
 export function validateT2AStreaming(format: string, stream: boolean): void {
   if (stream && format === 'wav') {
     throw new CLIError(

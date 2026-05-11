@@ -8,7 +8,7 @@ import { detectOutputFormat, formatOutput } from '../../output/formatter';
 import { saveAudioOutput } from '../../output/audio';
 import { writeFileSync } from 'fs';
 import { readTextFromPathOrStdin } from '../../utils/fs';
-import { T2A_FORMATS, formatList, validateAudioFormat, validateT2AStreaming } from '../../utils/audio-formats';
+import { T2A_FORMATS, formatList, validateAudioFormat, validateT2AStreaming, t2aDefaultSampleRate } from '../../utils/audio-formats';
 import type { Config } from '../../config/schema';
 import type { GlobalFlags } from '../../types/flags';
 import type { SpeechRequest, SpeechResponse } from '../../types/api';
@@ -81,7 +81,7 @@ export default defineCommand({
       },
       audio_setting: {
         format: (flags.format as string) || 'mp3',
-        sample_rate: (flags.sampleRate as number) ?? 32000,
+        sample_rate: (flags.sampleRate as number) ?? t2aDefaultSampleRate(ext, 32000),
         bitrate: (flags.bitrate as number) ?? 128000,
         channel: (flags.channels as number) ?? 1,
       },
