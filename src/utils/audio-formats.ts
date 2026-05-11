@@ -2,7 +2,7 @@ import { CLIError } from '../errors/base';
 import { ExitCode } from '../errors/codes';
 
 export const T2A_FORMATS = ['mp3', 'pcm', 'flac', 'wav', 'pcmu_raw', 'pcmu_wav', 'opus'] as const;
-export const MUSIC_FORMATS = ['mp3', 'wav', 'pcm', 'flac'] as const;
+export const MUSIC_FORMATS = ['mp3', 'wav', 'pcm'] as const;
 
 export type T2AFormat = (typeof T2A_FORMATS)[number];
 export type MusicFormat = (typeof MUSIC_FORMATS)[number];
@@ -18,6 +18,16 @@ export function validateAudioFormat(format: string, formats: readonly string[]):
       ExitCode.USAGE,
     );
   }
+}
+
+const T2A_SAMPLE_RATE: Partial<Record<T2AFormat, number>> = {
+  opus: 24000,
+  pcmu_raw: 8000,
+  pcmu_wav: 8000,
+};
+
+export function t2aDefaultSampleRate(format: string, fallback: number): number {
+  return T2A_SAMPLE_RATE[format as T2AFormat] ?? fallback;
 }
 
 export function validateT2AStreaming(format: string, stream: boolean): void {

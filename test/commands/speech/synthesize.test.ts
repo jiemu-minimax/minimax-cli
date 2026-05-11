@@ -259,4 +259,43 @@ describe('speech synthesize format validation', () => {
       synthesizeCommand.execute(config, { ...flags, format: 'wav', stream: true }),
     ).rejects.toThrow('wav format is not supported in streaming');
   });
+
+  it('defaults opus sample rate to 24000', async () => {
+    const originalLog = console.log;
+    let output = '';
+    console.log = (msg: string) => { output += msg; };
+    try {
+      await synthesizeCommand.execute(config, { ...flags, format: 'opus' });
+      const parsed = JSON.parse(output);
+      expect(parsed.request.audio_setting.sample_rate).toBe(24000);
+    } finally {
+      console.log = originalLog;
+    }
+  });
+
+  it('defaults pcmu_wav sample rate to 8000', async () => {
+    const originalLog = console.log;
+    let output = '';
+    console.log = (msg: string) => { output += msg; };
+    try {
+      await synthesizeCommand.execute(config, { ...flags, format: 'pcmu_wav' });
+      const parsed = JSON.parse(output);
+      expect(parsed.request.audio_setting.sample_rate).toBe(8000);
+    } finally {
+      console.log = originalLog;
+    }
+  });
+
+  it('respects explicit --sample-rate even for opus', async () => {
+    const originalLog = console.log;
+    let output = '';
+    console.log = (msg: string) => { output += msg; };
+    try {
+      await synthesizeCommand.execute(config, { ...flags, format: 'opus', sampleRate: 16000 });
+      const parsed = JSON.parse(output);
+      expect(parsed.request.audio_setting.sample_rate).toBe(16000);
+    } finally {
+      console.log = originalLog;
+    }
+  });
 });
