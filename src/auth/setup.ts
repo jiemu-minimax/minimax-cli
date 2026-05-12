@@ -57,11 +57,9 @@ export async function ensureAuth(config: Config): Promise<void> {
       const oauthConfig: OAuthConfig = {
         clientId: '659cf4c1-615c-45f6-a5f6-4bf15eb476e5',
         clientName: 'MiniMax CLI',
-        authorizationUrl: `${config.platformHost}/oauth-authorize`,
         tokenUrl: `${config.oauthApiHost}/oauth2/token`,
         deviceCodeUrl: `${config.oauthApiHost}/oauth2/device/code`,
         scopes: ['openid', 'profile', 'coding_plan'],
-        callbackPort: 18991,
       };
       const tokens = await startDeviceCodeFlow(oauthConfig);
       const creds: CredentialFile = {

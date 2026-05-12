@@ -11,7 +11,7 @@ import { getConfigPath } from '../../config/paths';
 import { readConfigFile, writeConfigFile } from '../../config/loader';
 import { isInteractive } from '../../utils/env';
 import { maskToken } from '../../utils/token';
-import { PLATFORM_HOSTS, OAUTH_API_HOSTS, type Region } from '../../config/schema';
+import { OAUTH_API_HOSTS, type Region } from '../../config/schema';
 import type { Config } from '../../config/schema';
 import type { GlobalFlags } from '../../types/flags';
 import type { CredentialFile } from '../../auth/types';
@@ -132,17 +132,14 @@ export default defineCommand({
       }
     }
 
-    const platformHost = process.env.MINIMAX_PLATFORM_URL || PLATFORM_HOSTS[region];
     const oauthApiHost = process.env.MINIMAX_AUTH_URL || OAUTH_API_HOSTS[region];
 
     const oauthConfig: OAuthConfig = {
       clientId: '659cf4c1-615c-45f6-a5f6-4bf15eb476e5',
       clientName: 'MiniMax CLI',
-      authorizationUrl: `${platformHost}/oauth-authorize`,
       tokenUrl: `${oauthApiHost}/oauth2/token`,
       deviceCodeUrl: `${oauthApiHost}/oauth2/device/code`,
       scopes: ['openid', 'profile', 'coding_plan'],
-      callbackPort: 18991,
     };
 
     const tokens = await startDeviceCodeFlow(oauthConfig);

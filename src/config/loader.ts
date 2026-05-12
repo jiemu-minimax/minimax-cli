@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, renameSync, existsSync } from 'fs';
-import { parseConfigFile, REGIONS, PLATFORM_HOSTS, OAUTH_API_HOSTS, type Config, type ConfigFile, type Region } from './schema';
+import { parseConfigFile, REGIONS, OAUTH_API_HOSTS, type Config, type ConfigFile, type Region } from './schema';
 import { ensureConfigDir, getConfigPath, getCredentialsPath } from './paths';
 import { detectOutputFormat, type OutputFormat } from '../output/formatter';
 import { CLIError } from '../errors/base';
@@ -83,7 +83,6 @@ export function loadConfig(flags: GlobalFlags): Config {
     configPath: getConfigPath(),
     region,
     baseUrl,
-    platformHost: process.env.MINIMAX_PLATFORM_URL || PLATFORM_HOSTS[region],
     oauthApiHost: process.env.MINIMAX_AUTH_URL || OAUTH_API_HOSTS[region],
     output,
     timeout,

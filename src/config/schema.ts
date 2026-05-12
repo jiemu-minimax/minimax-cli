@@ -9,10 +9,6 @@ export const DOCS_HOSTS = {
 } as const;
 
 export type Region = keyof typeof REGIONS;
-export const PLATFORM_HOSTS: Record<Region, string> = {
-  cn: 'https://platform.minimaxi.com',
-  global: 'https://platform.minimax.io',
-};
 
 export const OAUTH_API_HOSTS: Record<Region, string> = {
   cn: 'https://account.minimaxi.com',
@@ -60,7 +56,6 @@ export interface Config {
   configPath?: string;
   region: Region;
   baseUrl: string;
-  platformHost: string;
   oauthApiHost: string;
   output: 'text' | 'json';
   timeout: number;
