@@ -23,7 +23,6 @@ describe('text chat command', () => {
     const config: Config = {
       apiKey: 'test-key',
       region: 'global' as const,
-      platformHost: 'https://platform.minimax.io',
       oauthApiHost: 'https://account.minimax.io',
       baseUrl: server.url,
       output: 'json',
@@ -68,7 +67,6 @@ describe('text chat command', () => {
     const config: Config = {
       apiKey: 'test-key',
       region: 'global' as const,
-      platformHost: 'https://platform.minimax.io',
       oauthApiHost: 'https://account.minimax.io',
       baseUrl: 'https://api.mmx.io',
       output: 'json',
